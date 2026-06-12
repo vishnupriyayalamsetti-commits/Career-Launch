@@ -1,0 +1,6 @@
+{
+  "name": "Career Launch",
+  "description": "An online platform for searching and applying to fresher and experience jobs with candidate profile registration and live application tracking dashboards.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
