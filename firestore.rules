@@ -1,0 +1,79 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Student profile validation helper
+    function isValidStudentProfile(data) {
+      return data.keys().hasAll(['name', 'email', 'collegeName', 'skills'])
+        && data.keys().size() >= 4
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 200
+        && data.email is string && data.email.size() > 0 && data.email.size() <= 200
+        && data.collegeName is string && data.collegeName.size() > 0 && data.collegeName.size() <= 200
+        && data.skills is list && data.skills.size() <= 50;
+    }
+
+    // Application validation helper
+    function isValidApplication(data) {
+      return data.keys().hasAll(['jobId', 'jobTitle', 'companyName', 'appliedDate', 'status'])
+        && data.keys().size() == 5
+        && data.jobId is string && data.jobId.size() <= 128
+        && data.jobTitle is string && data.jobTitle.size() <= 200
+        && data.companyName is string && data.companyName.size() <= 200
+        && data.appliedDate is string && data.appliedDate.size() <= 100
+        && data.status in ['applied', 'under revision', 'shortlisted', 'interview scheduled', 'offered', 'not selected'];
+    }
+
+    // Saved job validation helper
+    function isValidSavedJob(data) {
+      return data.keys().hasAll(['jobId', 'savedDate'])
+        && data.keys().size() == 2
+        && data.jobId is string && data.jobId.size() <= 128
+        && data.savedDate is string && data.savedDate.size() <= 100;
+    }
+
+    // Match rules
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidStudentProfile(request.resource.data);
+      allow update: if isOwner(userId) && isValidStudentProfile(request.resource.data) 
+                    && request.resource.data.email == resource.data.email; // email is immutable
+      allow delete: if isOwner(userId);
+
+      // Applications subcollection rules
+      match /applications/{applicationId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(applicationId) && isValidApplication(request.resource.data);
+        allow update: if isOwner(userId) && isValidId(applicationId) && isValidApplication(request.resource.data)
+                      && request.resource.data.jobId == resource.data.jobId; // jobId is immutable
+        allow delete: if isOwner(userId);
+      }
+
+      // Saved jobs subcollection rules
+      match /savedJobs/{savedJobId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(savedJobId) && isValidSavedJob(request.resource.data);
+        allow update: if isOwner(userId) && isValidId(savedJobId) && isValidSavedJob(request.resource.data)
+                      && request.resource.data.jobId == resource.data.jobId; // jobId is immutable
+        allow delete: if isOwner(userId);
+      }
+    }
+  }
+}

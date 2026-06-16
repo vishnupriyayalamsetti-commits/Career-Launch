@@ -1,0 +1,96 @@
+{
+  "entities": {
+    "StudentProfile": {
+      "title": "StudentProfile",
+      "description": "Candidate profile details",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Full name of the student"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Contact email address"
+        },
+        "collegeName": {
+          "type": "string",
+          "description": "Name of university or college"
+        },
+        "skills": {
+          "type": "array",
+          "description": "List of technologies and skills"
+        },
+        "resumeName": {
+          "type": "string",
+          "description": "Filename of uploaded resume document"
+        },
+        "resumeDataUrl": {
+          "type": "string",
+          "description": "Stored location pointer of document"
+        }
+      },
+      "required": ["name", "email", "collegeName", "skills"]
+    },
+    "Application": {
+      "title": "Application",
+      "description": "Applied jobs tracker",
+      "type": "object",
+      "properties": {
+        "jobId": {
+          "type": "string",
+          "description": "Unique identifier of the target job opening"
+        },
+        "jobTitle": {
+          "type": "string",
+          "description": "Title of the job"
+        },
+        "companyName": {
+          "type": "string",
+          "description": "Company name offering the job"
+        },
+        "appliedDate": {
+          "type": "string",
+          "description": "ISO date of the application"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["applied", "under revision", "shortlisted", "interview scheduled", "offered", "not selected"],
+          "description": "Current status phase of recruitment"
+        }
+      },
+      "required": ["jobId", "jobTitle", "companyName", "appliedDate", "status"]
+    },
+    "SavedJob": {
+      "title": "SavedJob",
+      "description": "Saved job item reference",
+      "type": "object",
+      "properties": {
+        "jobId": {
+          "type": "string",
+          "description": "Saved job id"
+        },
+        "savedDate": {
+          "type": "string",
+          "description": "ISO date for saved item"
+        }
+      },
+      "required": ["jobId", "savedDate"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "StudentProfile",
+      "description": "Information corresponding to registered candidate accounts"
+    },
+    "users/{userId}/applications/{applicationId}": {
+      "schema": "Application",
+      "description": "Collection of applicant files submitted by a user"
+    },
+    "users/{userId}/savedJobs/{savedJobId}": {
+      "schema": "SavedJob",
+      "description": "List of jobs bookmarked by a user"
+    }
+  }
+}
