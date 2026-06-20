@@ -33,18 +33,24 @@ export default function App() {
     const saved = localStorage.getItem('career_launch_profile');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.name === 'Priya Sharma') {
+          parsed.name = 'Vishnu Priya';
+          parsed.email = 'vishnupriyayalamsetti@gmail.com';
+          localStorage.setItem('career_launch_profile', JSON.stringify(parsed));
+        }
+        return parsed;
       } catch (e) {
         // Fallback
       }
     }
-    // Prefilled profile to prevent "Dashboard Locked" block and show the 105 applications immediately
+    // Prefilled profile to prevent "Dashboard Locked" block
     return {
-      name: 'Priya Sharma',
-      email: 'priya.sharma@gmail.com',
+      name: 'Vishnu Priya',
+      email: 'vishnupriyayalamsetti@gmail.com',
       collegeName: 'National Institute of Technology (NIT), Bangalore',
       skills: ['React', 'TypeScript', 'JavaScript', 'SQL', 'Git', 'Node.js'],
-      resumeName: 'priya_sharma_resume.pdf',
+      resumeName: 'vishnu_priya_resume.pdf',
       resumeDataUrl: 'mock-url-placeholder'
     };
   });
