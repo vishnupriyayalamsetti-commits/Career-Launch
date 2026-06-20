@@ -59,13 +59,19 @@ export default function JobsTab({
     return mockJobs.filter(job => {
       // 1. Text Search query filter
       if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
-        const matchesTitle = job.title.toLowerCase().includes(query);
-        const matchesCompany = job.companyName.toLowerCase().includes(query);
-        const matchesLocation = job.location.toLowerCase().includes(query);
-        const matchesSkill = job.skills.some(skill => skill.toLowerCase().includes(query));
-        const matchesCategory = job.category.toLowerCase().includes(query);
-        if (!matchesTitle && !matchesCompany && !matchesLocation && !matchesSkill && !matchesCategory) {
+        const query = searchQuery.toLowerCase().trim();
+        const words = query.split(/\s+/).filter(Boolean);
+        
+        const matchesAllWords = words.every(word => {
+          const matchesTitle = job.title.toLowerCase().includes(word);
+          const matchesCompany = job.companyName.toLowerCase().includes(word);
+          const matchesLocation = job.location.toLowerCase().includes(word);
+          const matchesSkill = job.skills.some(skill => skill.toLowerCase().includes(word));
+          const matchesCategory = job.category.toLowerCase().includes(word);
+          return matchesTitle || matchesCompany || matchesLocation || matchesSkill || matchesCategory;
+        });
+
+        if (!matchesAllWords) {
           return false;
         }
       }

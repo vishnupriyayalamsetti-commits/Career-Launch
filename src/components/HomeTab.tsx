@@ -52,7 +52,8 @@ export default function HomeTab({
 
   const handleQuickCategoryClick = (category: 'fresher' | 'experienced') => {
     onSetFilterType(category);
-    onSetSearchQuery('');
+    const finalQuery = [localSearch, localLocation].filter(Boolean).join(' ');
+    onSetSearchQuery(finalQuery ? finalQuery : '');
     onNavigate('jobs');
   };
 
@@ -141,7 +142,7 @@ export default function HomeTab({
       <section className="space-y-6">
         <div className="text-center max-w-xl mx-auto space-y-2">
           <h2 className="text-3xl font-bold tracking-tight text-slate-900 font-sans">
-            Engineered Specifically for Students
+            Engineered Specifically for Candidates
           </h2>
           <p className="text-slate-500 font-sans">
             How Career Launch aligns entry-level aspirants with world class corporate ecosystems.

@@ -159,7 +159,7 @@ export default function RegisterTab({
             onClick={() => onNavigate('dashboard')}
             className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-xl text-sm transition shadow-md cursor-pointer"
           >
-            Access Student Dashboard
+            Access User Dashboard
           </button>
           <button 
             onClick={() => onNavigate('jobs')}
@@ -177,7 +177,7 @@ export default function RegisterTab({
       {/* Banner info */}
       <div className="text-center space-y-1.5 ">
         <h1 className="text-3xl font-bold tracking-tight text-slate-900 font-sans">
-          Student Registrations Pipeline
+          User Registration Pipeline
         </h1>
         <p className="text-slate-500 text-sm sm:text-base font-sans leading-relaxed">
           Create/update your academic profile here. Fully aligned with verified partner hiring portals.

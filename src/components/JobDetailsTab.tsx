@@ -252,14 +252,14 @@ export default function JobDetailsTab({
                     <div className="flex gap-1.5 items-center font-bold text-amber-400">
                       <AlertCircle className="w-4 h-4" /> Guest Profile Detected
                     </div>
-                    <p className="leading-relaxed">To submit your portfolio and apply to this job, please register your student credentials and resume.</p>
+                    <p className="leading-relaxed">To submit your portfolio and apply to this job, please register your profile credentials and resume.</p>
                   </div>
 
                   <button 
                     onClick={() => onNavigate('register')}
                     className="w-full bg-indigo-600 hover:bg-indigo-700 hover:scale-[1.01] text-white font-bold py-3 px-4 rounded-xl text-sm transition shadow-md active:scale-[0.99] cursor-pointer"
                   >
-                    Complete Student Registration
+                    Complete User Registration
                   </button>
                 </div>
               ) : (

@@ -41,7 +41,35 @@ export default function App() {
 
   const [applications, setApplications] = useState<Application[]>(() => {
     const saved = localStorage.getItem('career_launch_applications');
-    return saved ? JSON.parse(saved) : [];
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length >= 100) {
+          return parsed;
+        }
+      } catch (e) {
+        // Fallback to defaults
+      }
+    }
+    const initialApps: Application[] = [];
+    const statuses: ('applied' | 'under revision' | 'shortlisted' | 'interview scheduled' | 'offered' | 'not selected')[] = [
+      'applied', 'under revision', 'shortlisted', 'interview scheduled', 'offered', 'not selected'
+    ];
+    for (let i = 0; i < Math.min(mockJobs.length, 105); i++) {
+      const job = mockJobs[i];
+      const statusIndex = i % statuses.length;
+      const dayOffset = (i % 24) + 1;
+      const status = statuses[statusIndex];
+      initialApps.push({
+        id: `gen-app-${i}`,
+        jobId: job.id,
+        jobTitle: job.title,
+        companyName: job.companyName,
+        appliedDate: `Jun ${String(dayOffset).padStart(2, '0')}, 2026`,
+        status: status
+      });
+    }
+    return initialApps;
   });
 
   // Filters passed down to list screens
@@ -117,7 +145,7 @@ export default function App() {
     { id: 'home', label: 'Home', icon: Compass },
     { id: 'jobs', label: 'Jobs', icon: Briefcase },
     { id: 'job-details', label: 'Job Details', icon: FileText },
-    { id: 'register', label: 'Student Register', icon: UserPlus },
+    { id: 'register', label: 'User Registration', icon: UserPlus },
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, badge: applications.length > 0 ? applications.length : undefined },
     { id: 'contact', label: 'Contact', icon: PhoneCall },
   ];
@@ -141,7 +169,7 @@ export default function App() {
               <span className="font-extrabold text-white tracking-tight block text-sm">
                 Career Launch
               </span>
-              <span className="text-[9px] text-indigo-400 font-bold block -mt-0.5 uppercase tracking-widest font-mono">Student Hub</span>
+              <span className="text-[9px] text-indigo-400 font-bold block -mt-0.5 uppercase tracking-widest font-mono">User Hub</span>
             </div>
           </div>
 
@@ -229,7 +257,7 @@ export default function App() {
                   <span className="font-extrabold text-slate-900 tracking-tight block text-sm">
                     Career Launch
                   </span>
-                  <span className="text-[9px] text-indigo-600 font-bold block -mt-1 uppercase tracking-widest font-mono">Student Hub</span>
+                  <span className="text-[9px] text-indigo-600 font-bold block -mt-1 uppercase tracking-widest font-mono">User Hub</span>
                 </div>
               </div>
 
@@ -291,7 +319,7 @@ export default function App() {
                 }}
                 className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 px-4 rounded-xl text-sm transition-all shadow-md text-center block cursor-pointer"
               >
-                {profile ? 'Edit Full Profile' : 'Student Register'}
+                {profile ? 'Edit Full Profile' : 'User Registration'}
               </button>
             </div>
           )}
@@ -399,7 +427,7 @@ export default function App() {
 
             {/* Colon 3: Verification info */}
             <div className="space-y-3 col-span-1 text-xs">
-              <h4 className="font-bold text-indigo-400 uppercase tracking-widest text-[9px]">Student Help</h4>
+              <h4 className="font-bold text-indigo-400 uppercase tracking-widest text-[9px]">User Help</h4>
               <ul className="space-y-2 text-slate-400">
                 <li><button onClick={() => setActiveTab('register')} className="hover:text-white transition font-sans cursor-pointer text-left">📜 Upload & Update Resume</button></li>
                 <li><button onClick={() => setActiveTab('dashboard')} className="hover:text-white transition font-sans cursor-pointer text-left">📈 Track Active Applications</button></li>
