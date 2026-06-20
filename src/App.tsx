@@ -31,7 +31,22 @@ export default function App() {
   // Shared application states initialized from localStorage
   const [profile, setProfile] = useState<StudentProfile | null>(() => {
     const saved = localStorage.getItem('career_launch_profile');
-    return saved ? JSON.parse(saved) : null;
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        // Fallback
+      }
+    }
+    // Prefilled profile to prevent "Dashboard Locked" block and show the 105 applications immediately
+    return {
+      name: 'Priya Sharma',
+      email: 'priya.sharma@gmail.com',
+      collegeName: 'National Institute of Technology (NIT), Bangalore',
+      skills: ['React', 'TypeScript', 'JavaScript', 'SQL', 'Git', 'Node.js'],
+      resumeName: 'priya_sharma_resume.pdf',
+      resumeDataUrl: 'mock-url-placeholder'
+    };
   });
 
   const [savedJobIds, setSavedJobIds] = useState<string[]>(() => {
@@ -41,27 +56,20 @@ export default function App() {
 
   const [applications, setApplications] = useState<Application[]>(() => {
     const saved = localStorage.getItem('career_launch_applications');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length >= 100) {
-          return parsed;
-        }
-      } catch (e) {
-        // Fallback to defaults
-      }
-    }
-    const initialApps: Application[] = [];
+    const fresherJobs = mockJobs.filter(job => job.type === 'fresher');
+    
+    const defaultApps: Application[] = [];
     const statuses: ('applied' | 'under revision' | 'shortlisted' | 'interview scheduled' | 'offered' | 'not selected')[] = [
       'applied', 'under revision', 'shortlisted', 'interview scheduled', 'offered', 'not selected'
     ];
-    for (let i = 0; i < Math.min(mockJobs.length, 105); i++) {
-      const job = mockJobs[i];
+    
+    for (let i = 0; i < Math.min(fresherJobs.length, 10); i++) {
+      const job = fresherJobs[i];
       const statusIndex = i % statuses.length;
       const dayOffset = (i % 24) + 1;
       const status = statuses[statusIndex];
-      initialApps.push({
-        id: `gen-app-${i}`,
+      defaultApps.push({
+        id: `gen-app-fresher-${i}`,
         jobId: job.id,
         jobTitle: job.title,
         companyName: job.companyName,
@@ -69,7 +77,28 @@ export default function App() {
         status: status
       });
     }
-    return initialApps;
+
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          // If there are non-fresher jobs in the list, or the list size was scaled to all 105 jobs,
+          // overwrite/re-sync with the polished 10 fresher applications.
+          const hasNonFresher = parsed.some(app => {
+            const job = mockJobs.find(j => j.id === app.jobId);
+            return job && job.type !== 'fresher';
+          });
+          if (hasNonFresher || parsed.length > 10) {
+            localStorage.setItem('career_launch_applications', JSON.stringify(defaultApps));
+            return defaultApps;
+          }
+          return parsed;
+        }
+      } catch (e) {
+        // Fallback to defaults
+      }
+    }
+    return defaultApps;
   });
 
   // Filters passed down to list screens
@@ -191,7 +220,7 @@ export default function App() {
                   <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-indigo-400' : 'text-slate-500'}`} />
                   <span className="flex-1 text-left">{item.label}</span>
                   {item.badge !== undefined && (
-                    <span className="bg-indigo-600 text-white font-mono text-[9px] w-4.5 h-4.5 rounded-full flex items-center justify-center font-bold shadow-sm">
+                    <span className="bg-indigo-600 text-white font-mono text-[9px] px-1.5 py-0.5 min-w-[18px] min-h-[18px] rounded-full flex items-center justify-center font-bold shadow-sm shrink-0">
                       {item.badge}
                     </span>
                   )}
@@ -304,7 +333,7 @@ export default function App() {
                     <Icon className="w-5 h-5 shrink-0" />
                     <span className="flex-1 text-left">{item.label}</span>
                     {item.badge !== undefined && (
-                      <span className="bg-indigo-600 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                      <span className="bg-indigo-600 text-white text-[10px] px-2 py-0.5 min-w-[20px] min-h-[20px] rounded-full flex items-center justify-center font-bold shrink-0">
                         {item.badge}
                       </span>
                     )}
