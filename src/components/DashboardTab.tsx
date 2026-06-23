@@ -16,7 +16,11 @@ import {
   Trash2,
   ChevronRight,
   ShieldAlert,
-  ArrowRight
+  ArrowRight,
+  Database,
+  Sparkles,
+  Search,
+  ChevronLeft
 } from 'lucide-react';
 import { StudentProfile, Application, TabType, Job } from '../types';
 import { mockJobs } from '../data/mockData';
@@ -61,6 +65,37 @@ export default function DashboardTab({
   const fresherApps = enrichedApplications.filter(app => app.jobType === 'fresher');
   const experiencedApps = enrichedApplications.filter(app => app.jobType === 'experienced');
   const [activeAppTab, setActiveAppTab] = useState<'fresher' | 'experienced'>('fresher');
+
+  // Pagination & Search filter state
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 6;
+
+  // Switch tabs reset
+  const handleTabChange = (tab: 'fresher' | 'experienced') => {
+    setActiveAppTab(tab);
+    setCurrentPage(1);
+    setSearchTerm('');
+    setStatusFilter('all');
+  };
+
+  const activeAppsList = activeAppTab === 'fresher' ? fresherApps : experiencedApps;
+
+  const filteredApps = activeAppsList.filter(app => {
+    if (statusFilter !== 'all' && app.status !== statusFilter) return false;
+    if (searchTerm.trim() !== '') {
+      const term = searchTerm.toLowerCase();
+      const matchTitle = app.jobTitle.toLowerCase().includes(term);
+      const matchCompany = app.companyName.toLowerCase().includes(term);
+      if (!matchTitle && !matchCompany) return false;
+    }
+    return true;
+  });
+
+  const totalPages = Math.max(1, Math.ceil(filteredApps.length / ITEMS_PER_PAGE));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const displayedApps = filteredApps.slice((safeCurrentPage - 1) * ITEMS_PER_PAGE, safeCurrentPage * ITEMS_PER_PAGE);
 
   // Handle Drag & Drop updates
   const handleDrag = (e: React.DragEvent) => {
@@ -346,8 +381,8 @@ export default function DashboardTab({
             {/* Sub-tabs to switch streams */}
             <div className="flex gap-2 p-1 bg-slate-50 border border-slate-100/80 rounded-xl">
               <button
-                onClick={() => setActiveAppTab('fresher')}
-                className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider text-center rounded-lg transition-all cursor-pointer ${
+                onClick={() => handleTabChange('fresher')}
+                className={`flex-1 py-1.5 text-xs font-bold uppercase tracking-wider text-center rounded-lg transition-all cursor-pointer ${
                   activeAppTab === 'fresher'
                     ? 'bg-white text-indigo-600 shadow-sm border border-slate-100'
                     : 'text-slate-400 hover:text-slate-600'
@@ -356,8 +391,8 @@ export default function DashboardTab({
                 🎓 Fresher Stream ({fresherApps.length})
               </button>
               <button
-                onClick={() => setActiveAppTab('experienced')}
-                className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider text-center rounded-lg transition-all cursor-pointer ${
+                onClick={() => handleTabChange('experienced')}
+                className={`flex-1 py-1.5 text-xs font-bold uppercase tracking-wider text-center rounded-lg transition-all cursor-pointer ${
                   activeAppTab === 'experienced'
                     ? 'bg-white text-indigo-600 shadow-sm border border-slate-100'
                     : 'text-slate-400 hover:text-slate-600'
@@ -367,193 +402,176 @@ export default function DashboardTab({
               </button>
             </div>
 
-            {/* List conditional mapping based on subtab selection */}
-            {activeAppTab === 'fresher' ? (
-              fresherApps.length === 0 ? (
-                <div className="text-center py-10 px-4 bg-slate-50/20 border border-dashed border-slate-200/80 rounded-2xl space-y-3">
-                  <GraduationCap className="w-10 h-10 text-slate-350 mx-auto" strokeWidth={1.5} />
-                  <div className="space-y-1">
-                    <h4 className="font-semibold text-slate-800 text-sm">No Fresher Submissions Active</h4>
-                    <p className="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">
-                      You haven’t applied for any fresher level opportunities yet. Filter the jobs feed inside our entry catalog to get started.
-                    </p>
-                  </div>
-                  <button 
-                    onClick={() => {
-                      onNavigate('jobs');
-                    }}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2 px-4 rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
-                  >
-                    View Fresher Jobs →
-                  </button>
+            {/* Search and Filters Bar */}
+            <div className="flex flex-col sm:flex-row gap-3 pt-1">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search by title or company..."
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-9 pr-4 text-xs font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition"
+                />
+              </div>
+
+              <select
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-xs font-semibold text-slate-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition cursor-pointer"
+              >
+                <option value="all">📁 All Statuses</option>
+                <option value="applied">Applied</option>
+                <option value="under revision">Under Revision</option>
+                <option value="shortlisted">Shortlisted</option>
+                <option value="interview scheduled">Interview Scheduled</option>
+                <option value="offered">Offered</option>
+                <option value="not selected">Not Selected</option>
+              </select>
+            </div>
+
+            {/* Results metadata */}
+            <div className="flex items-center justify-between text-[11px] text-slate-400 font-bold px-1 py-1 font-sans">
+              <span>Showing {displayedApps.length} of {filteredApps.length} match{filteredApps.length !== 1 ? 'es' : ''}</span>
+              {(statusFilter !== 'all' || searchTerm !== '') && (
+                <button
+                  onClick={() => {
+                    setSearchTerm('');
+                    setStatusFilter('all');
+                    setCurrentPage(1);
+                  }}
+                  className="text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer transition"
+                >
+                  Clear search filters
+                </button>
+              )}
+            </div>
+
+            {/* Simulated Pagination List */}
+            {displayedApps.length === 0 ? (
+              <div className="text-center py-12 px-4 bg-slate-50/30 border border-dashed border-slate-200/80 rounded-2xl space-y-3">
+                <Briefcase className="w-10 h-10 text-slate-300 mx-auto" strokeWidth={1.5} />
+                <div className="space-y-1">
+                  <h4 className="font-semibold text-slate-800 text-sm">No Matching Submissions Active</h4>
+                  <p className="text-xs text-slate-400 max-w-xs mx-auto leading-relaxed">
+                    Try refining your search text or changing the status category selector to locate matching candidates.
+                  </p>
                 </div>
-              ) : (
-                <div className="space-y-4 pt-1 max-h-[500px] overflow-y-auto pr-1">
-                  {fresherApps.map((app) => (
-                    <div 
-                      key={app.id}
-                      className="p-4 rounded-xl border border-slate-100 bg-slate-55/50 hover:bg-slate-50 hover:border-slate-150 transition-all space-y-3.5"
-                    >
-                      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2.5">
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-[10px] font-mono tracking-tight bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-100/60 font-bold uppercase shrink-0">fresher</span>
-                            <span className="text-[11px] text-slate-400 font-sans block truncate">{app.companyName} • Applied {app.appliedDate}</span>
-                          </div>
-                          <h4 className="font-bold text-slate-800 truncate text-sm sm:text-base font-sans">{app.jobTitle}</h4>
-                        </div>
-
-                        {/* Interactive cycle button */}
-                        <button 
-                          onClick={() => onPromoteApplicationStatus(app.id)}
-                          className={`text-xs px-3 py-1.5 rounded-xl border font-semibold shrink-0 transition flex items-center gap-1 cursor-pointer hover:shadow-xs active:scale-95 ${getStatusClasses(app.status)}`}
-                          title="Click to cycle status for testing purposes"
-                        >
-                          <span>{app.status.toUpperCase()}</span>
-                          <RefreshCcw className="w-3 h-3 text-slate-400 hover:text-indigo-600 shrink-0" />
-                        </button>
-                      </div>
-
-                      {/* Progress tracking Stepper */}
-                      <div className="pt-2">
-                        <div className="grid grid-cols-4 gap-1.5 relative">
-                          {/* Horizontal joiner bar */}
-                          <div className="absolute top-1.5 left-0 right-0 h-0.5 bg-slate-200 -z-1" />
-                          
-                          {/* Steps */}
-                          {['applied', 'under revision', 'shortlisted', 'interview scheduled / offered'].map((step, idx) => {
-                            let isPastOrCurrent = false;
-                            const currentStat = app.status;
-
-                            if (currentStat === 'not selected') {
-                              // special case
-                            } else {
-                              if (currentStat === 'applied') {
-                               isPastOrCurrent = idx === 0;
-                              } else if (currentStat === 'under revision') {
-                                isPastOrCurrent = idx <= 1;
-                              } else if (currentStat === 'shortlisted') {
-                                isPastOrCurrent = idx <= 2;
-                              } else if (currentStat === 'interview scheduled' || currentStat === 'offered') {
-                                isPastOrCurrent = idx <= 3;
-                              }
-                            }
-
-                            return (
-                              <div key={idx} className="text-center space-y-1">
-                                <div className={`w-3.5 h-3.5 rounded-full mx-auto border flex items-center justify-center transition ${
-                                  isPastOrCurrent 
-                                    ? 'bg-indigo-600 border-indigo-600 text-white' 
-                                    : 'bg-white border-slate-300'
-                                }`} />
-                                <span className={`block text-[9px] uppercase font-bold tracking-tight px-1 font-mono truncate ${
-                                  isPastOrCurrent ? 'text-indigo-600 font-semibold' : 'text-slate-400'
-                                }`}>
-                                  {idx === 0 ? 'Applied' : idx === 1 ? 'Review' : idx === 2 ? 'Shortlist' : 'Interview'}
-                                </span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                    </div>
-                  ))}
-                </div>
-              )
+              </div>
             ) : (
-              experiencedApps.length === 0 ? (
-                <div className="text-center py-10 px-4 bg-slate-50/20 border border-dashed border-slate-200/80 rounded-2xl space-y-3">
-                  <Briefcase className="w-10 h-10 text-slate-350 mx-auto" strokeWidth={1.5} />
-                  <div className="space-y-1">
-                    <h4 className="font-semibold text-slate-800 text-sm">No Experienced Submissions Active</h4>
-                    <p className="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">
-                      You haven’t applied for experienced level opportunities yet. Explore openings tailored for developers with professional milestones.
-                    </p>
-                  </div>
-                  <button 
-                    onClick={() => {
-                      onNavigate('jobs');
-                    }}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2 px-4 rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
+              <div className="space-y-4 pt-1">
+                {displayedApps.map((app) => (
+                  <div 
+                    key={app.id}
+                    className="p-4 rounded-xl border border-slate-100 bg-slate-50/40 hover:bg-slate-50 hover:border-slate-150 transition-all space-y-3.5"
                   >
-                    View Experienced Jobs →
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-4 pt-1 max-h-[500px] overflow-y-auto pr-1">
-                  {experiencedApps.map((app) => (
-                    <div 
-                      key={app.id}
-                      className="p-4 rounded-xl border border-slate-100 bg-slate-55/50 hover:bg-slate-50 hover:border-slate-150 transition-all space-y-3.5"
-                    >
-                      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2.5">
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-[10px] font-mono tracking-tight bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded border border-indigo-100/60 font-bold uppercase shrink-0">experienced</span>
-                            <span className="text-[11px] text-slate-400 font-sans block truncate">{app.companyName} • Applied {app.appliedDate}</span>
-                          </div>
-                          <h4 className="font-bold text-slate-800 truncate text-sm sm:text-base font-sans">{app.jobTitle}</h4>
+                    <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2.5">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className={`text-[10px] font-mono tracking-tight px-2 py-0.5 rounded border font-black uppercase shrink-0 ${
+                            app.jobType === 'fresher' 
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-150' 
+                              : 'bg-indigo-50 text-indigo-700 border-indigo-150'
+                          }`}>
+                            {app.jobType}
+                          </span>
+                          <span className="text-[11px] text-slate-4 w-min-0 text-slate-400 font-sans block truncate">
+                            {app.companyName} • Applied {app.appliedDate}
+                          </span>
                         </div>
-
-                        {/* Interactive cycle button */}
-                        <button 
-                          onClick={() => onPromoteApplicationStatus(app.id)}
-                          className={`text-xs px-3 py-1.5 rounded-xl border font-semibold shrink-0 transition flex items-center gap-1 cursor-pointer hover:shadow-xs active:scale-95 ${getStatusClasses(app.status)}`}
-                          title="Click to cycle status for testing purposes"
-                        >
-                          <span>{app.status.toUpperCase()}</span>
-                          <RefreshCcw className="w-3 h-3 text-slate-400 hover:text-indigo-600 shrink-0" />
-                        </button>
+                        <h4 className="font-bold text-slate-800 truncate text-sm sm:text-base font-sans">{app.jobTitle}</h4>
                       </div>
 
-                      {/* Progress tracking Stepper */}
-                      <div className="pt-2">
-                        <div className="grid grid-cols-4 gap-1.5 relative">
-                          {/* Horizontal joiner bar */}
-                          <div className="absolute top-1.5 left-0 right-0 h-0.5 bg-slate-200 -z-1" />
-                          
-                          {/* Steps */}
-                          {['applied', 'under revision', 'shortlisted', 'interview scheduled / offered'].map((step, idx) => {
-                            let isPastOrCurrent = false;
-                            const currentStat = app.status;
-
-                            if (currentStat === 'not selected') {
-                              // special case
-                            } else {
-                              if (currentStat === 'applied') {
-                               isPastOrCurrent = idx === 0;
-                              } else if (currentStat === 'under revision') {
-                                isPastOrCurrent = idx <= 1;
-                              } else if (currentStat === 'shortlisted') {
-                                isPastOrCurrent = idx <= 2;
-                              } else if (currentStat === 'interview scheduled' || currentStat === 'offered') {
-                                isPastOrCurrent = idx <= 3;
-                              }
-                            }
-
-                            return (
-                              <div key={idx} className="text-center space-y-1">
-                                <div className={`w-3.5 h-3.5 rounded-full mx-auto border flex items-center justify-center transition ${
-                                  isPastOrCurrent 
-                                    ? 'bg-indigo-600 border-indigo-600 text-white' 
-                                    : 'bg-white border-slate-300'
-                                }`} />
-                                <span className={`block text-[9px] uppercase font-bold tracking-tight px-1 font-mono truncate ${
-                                  isPastOrCurrent ? 'text-indigo-600 font-semibold' : 'text-slate-400'
-                                }`}>
-                                  {idx === 0 ? 'Applied' : idx === 1 ? 'Review' : idx === 2 ? 'Shortlist' : 'Interview'}
-                                </span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-
+                      {/* Interactive cycle button */}
+                      <button 
+                        onClick={() => onPromoteApplicationStatus(app.id)}
+                        className={`text-xs px-3 py-1.5 rounded-xl border font-semibold shrink-0 transition flex items-center gap-1 cursor-pointer hover:shadow-xs active:scale-95 ${getStatusClasses(app.status)}`}
+                        title="Click to cycle status for testing purposes"
+                      >
+                        <span>{app.status.toUpperCase()}</span>
+                        <RefreshCcw className="w-3.5 h-3.5 text-slate-400 hover:text-indigo-600 shrink-0" />
+                      </button>
                     </div>
-                  ))}
-                </div>
-              )
+
+                    {/* Progress tracking Stepper */}
+                    <div className="pt-2">
+                      <div className="grid grid-cols-4 gap-1.5 relative">
+                        {/* Horizontal joiner bar */}
+                        <div className="absolute top-1.5 left-0 right-0 h-0.5 bg-slate-200 -z-1" />
+                        
+                        {/* Steps */}
+                        {['applied', 'review', 'shortlist', 'interview'].map((step, idx) => {
+                          let isPastOrCurrent = false;
+                          const currentStat = app.status;
+
+                          if (currentStat === 'not selected') {
+                            // special case
+                          } else {
+                            if (currentStat === 'applied') {
+                             isPastOrCurrent = idx === 0;
+                            } else if (currentStat === 'under revision') {
+                              isPastOrCurrent = idx <= 1;
+                            } else if (currentStat === 'shortlisted') {
+                              isPastOrCurrent = idx <= 2;
+                            } else if (currentStat === 'interview scheduled' || currentStat === 'offered') {
+                              isPastOrCurrent = idx <= 3;
+                            }
+                          }
+
+                          return (
+                            <div key={idx} className="text-center space-y-1">
+                              <div className={`w-3.5 h-3.5 rounded-full mx-auto border flex items-center justify-center transition ${
+                                isPastOrCurrent 
+                                  ? 'bg-indigo-600 border-indigo-600 text-white shadow-xs' 
+                                  : 'bg-white border-slate-300'
+                              }`} />
+                              <span className={`block text-[9px] uppercase font-bold tracking-tight px-1 font-mono truncate ${
+                                isPastOrCurrent ? 'text-indigo-600 font-semibold' : 'text-slate-400'
+                              }`}>
+                                {step}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                  </div>
+                ))}
+
+                {/* Pagination Controls Footer widget */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between border-t border-slate-100 pt-4 mt-2">
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      disabled={safeCurrentPage === 1}
+                      className="flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-indigo-600 border border-slate-200 hover:border-slate-300 px-3 py-2 rounded-xl bg-white transition cursor-pointer disabled:opacity-40 disabled:hover:text-slate-600 disabled:hover:border-slate-200 disabled:cursor-not-allowed select-none"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      <span>Previous</span>
+                    </button>
+                    
+                    <span className="text-xs text-slate-500 font-semibold font-sans">
+                      Page <strong className="text-slate-800 font-bold">{safeCurrentPage}</strong> of <strong className="text-slate-800 font-bold">{totalPages}</strong>
+                    </span>
+
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                      disabled={safeCurrentPage === totalPages}
+                      className="flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-indigo-600 border border-slate-200 hover:border-slate-300 px-3 py-2 rounded-xl bg-white transition cursor-pointer disabled:opacity-40 disabled:hover:text-slate-600 disabled:hover:border-slate-200 disabled:cursor-not-allowed select-none"
+                    >
+                      <span>Next</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
           </div>
 

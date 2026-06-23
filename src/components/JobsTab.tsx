@@ -11,34 +11,73 @@ import {
   FileText,
   BookmarkCheck,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Database,
+  Sparkles,
+  CheckCircle,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
-import { Job, TabType } from '../types';
+import { Job, TabType, Application, StudentProfile } from '../types';
 import { mockJobs } from '../data/mockData';
 
 interface JobsTabProps {
   onNavigate: (tab: TabType) => void;
   onSelectJob: (jobId: string) => void;
+  profile: StudentProfile | null;
   searchQuery: string;
   onSetSearchQuery: (query: string) => void;
   filterType: 'all' | 'fresher' | 'experienced';
   onSetFilterType: (type: 'all' | 'fresher' | 'experienced') => void;
   savedJobIds: string[];
   onToggleSaveJob: (jobId: string) => void;
+  applications: Application[];
+  onSeed1000Applications?: () => void;
+  onResetApplications?: () => void;
 }
 
 export default function JobsTab({
   onNavigate,
   onSelectJob,
+  profile,
   searchQuery,
   onSetSearchQuery,
   filterType,
   onSetFilterType,
   savedJobIds,
-  onToggleSaveJob
+  onToggleSaveJob,
+  applications,
+  onSeed1000Applications,
+  onResetApplications
 }: JobsTabProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedSkill, setSelectedSkill] = useState<string>('All');
+  const [currentPage, setCurrentPage] = useState(1);
+  const JOBS_PER_PAGE = 8;
+  const [isSeeding, setIsSeeding] = useState(false);
+  const [seedProgress, setSeedProgress] = useState(0);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // Reset pagination to first page upon filter adjustments
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterType, selectedCategory, selectedSkill]);
+
+  const handleTriggerSeed = () => {
+    if (!onSeed1000Applications) return;
+    setIsSeeding(true);
+    setSeedProgress(15);
+    
+    setTimeout(() => setSeedProgress(42), 150);
+    setTimeout(() => setSeedProgress(75), 350);
+    setTimeout(() => setSeedProgress(94), 550);
+    setTimeout(() => {
+      setSeedProgress(100);
+      onSeed1000Applications();
+      setIsSeeding(false);
+      setSuccessMsg("System successfully synced 1,000 corporate applications into your dashboard status monitors! Head to the Dashboard tab to view pagination pipelines.");
+    }, 750);
+  };
 
   // List all available skills for quick filter
   const allSkills = useMemo(() => {
@@ -57,6 +96,13 @@ export default function JobsTab({
   // Filter logic
   const filteredJobs = useMemo(() => {
     return mockJobs.filter(job => {
+      // 0. Profile Matching Roles Filter (only show jobs matching candidate's skills)
+      if (profile && profile.skills && profile.skills.length > 0) {
+        const studentSkills = profile.skills.map(s => s.trim().toLowerCase());
+        const hasSkillMatch = job.skills.some(js => studentSkills.includes(js.trim().toLowerCase()));
+        if (!hasSkillMatch) return false;
+      }
+
       // 1. Text Search query filter
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase().trim();
@@ -88,7 +134,11 @@ export default function JobsTab({
 
       return true;
     });
-  }, [searchQuery, filterType, selectedCategory, selectedSkill]);
+  }, [searchQuery, filterType, selectedCategory, selectedSkill, profile]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredJobs.length / JOBS_PER_PAGE));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const displayedJobs = filteredJobs.slice((safeCurrentPage - 1) * JOBS_PER_PAGE, safeCurrentPage * JOBS_PER_PAGE);
 
   const handleResetFilters = () => {
     onSetSearchQuery('');
@@ -108,6 +158,48 @@ export default function JobsTab({
           Find matching careers. Use categories below to filter between Fresher Entry-Level or Experienced pipelines.
         </p>
       </div>
+
+      {profile ? (
+        <div className="bg-indigo-50/40 border border-indigo-100/80 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start sm:items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold shrink-0 shadow-sm shadow-indigo-600/10">
+              <Sparkles className="w-5 h-5 animate-pulse" />
+            </div>
+            <div>
+              <h4 className="text-sm font-black text-slate-800 font-sans">Tailored Role Matching Engaged</h4>
+              <p className="text-xs text-slate-500 leading-relaxed font-sans mt-0.5">
+                Automatically filtered to match your registered profile skills: <span className="font-bold text-indigo-700">{profile.skills.join(', ')}</span>.
+              </p>
+            </div>
+          </div>
+          <button 
+            onClick={() => onNavigate('register')}
+            className="text-xs font-bold text-indigo-700 hover:text-indigo-800 whitespace-nowrap bg-white hover:bg-slate-50 border border-indigo-150 py-2 px-4 rounded-xl transition duration-150 active:scale-95 cursor-pointer shadow-xs text-center"
+          >
+            Refine Skills
+          </button>
+        </div>
+      ) : (
+        <div className="bg-amber-50/50 border border-amber-100/80 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start sm:items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+              <AlertCircle className="w-5 h-5 text-amber-600 animate-bounce" />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-slate-800 font-sans">Unfiltered Vacancies List</h4>
+              <p className="text-xs text-slate-500 leading-relaxed font-sans mt-0.5">
+                Register or log in to a candidate profile to activate smart matching algorithms against corporate criteria.
+              </p>
+            </div>
+          </div>
+          <button 
+            onClick={() => onNavigate('register')}
+            className="text-xs font-bold text-amber-700 hover:text-amber-850 whitespace-nowrap bg-white hover:bg-slate-50 border border-amber-200 py-2 px-4 rounded-xl transition duration-150 active:scale-95 cursor-pointer text-center"
+          >
+            Create Profile Matcher
+          </button>
+        </div>
+      )}
 
       {/* Main Jobs Core Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -248,86 +340,153 @@ export default function JobsTab({
               </button>
             </div>
           ) : (
-            <div className="space-y-4">
-              {filteredJobs.map((job) => (
-                <div 
-                  key={job.id}
-                  className="bg-white border border-slate-100 hover:border-slate-200 rounded-2xl p-5 sm:p-6 shadow-sm hover:shadow-md transition-all flex flex-col sm:flex-row gap-5 items-start sm:items-center justify-between group"
-                >
-                  <div className="flex items-start gap-4 min-w-0 flex-1">
-                    <div className="w-14 h-14 rounded-2xl bg-slate-950 text-white font-extrabold text-xl flex items-center justify-center shrink-0">
-                      {job.logo}
-                    </div>
-                    <div className="space-y-1.5 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2.5">
-                        <span className="text-xs font-semibold text-slate-400 truncate">{job.companyName}</span>
-                        <span className="w-1 h-1 rounded-full bg-slate-300" />
-                        <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-sans weight-medium">
-                          {job.category}
-                        </span>
+            <div className="space-y-6">
+              <div className="space-y-4">
+                {displayedJobs.map((job) => (
+                  <div 
+                    key={job.id}
+                    className="bg-white border border-slate-100 hover:border-slate-200 rounded-2xl p-5 sm:p-6 shadow-sm hover:shadow-md transition-all flex flex-col sm:flex-row gap-5 items-start sm:items-center justify-between group"
+                  >
+                    <div className="flex items-start gap-4 min-w-0 flex-1">
+                      <div className="w-14 h-14 rounded-2xl bg-slate-950 text-white font-extrabold text-xl flex items-center justify-center shrink-0">
+                        {job.logo}
                       </div>
-                      
-                      <h3 className="font-bold text-slate-800 group-hover:text-indigo-600 transition text-lg leading-snug truncate font-sans">
-                        {job.title}
-                      </h3>
-
-                      <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-slate-500 pt-0.5 font-sans">
-                        <span className="flex items-center gap-1">
-                          <MapPin className="w-3.5 h-3.5 text-slate-400" /> {job.location}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <IndianRupee className="w-3.5 h-3.5 text-slate-400" /> {job.salary}
-                        </span>
-                        <span className="flex items-center gap-1 text-slate-400 font-medium">
-                          📅 {job.postedDate}
-                        </span>
-                      </div>
-
-                      {/* Job skills tags list */}
-                      <div className="flex flex-wrap gap-1.5 pt-2">
-                        {job.skills.map((skill, sIdx) => (
-                          <span 
-                            key={sIdx} 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedSkill(skill);
-                            }}
-                            className={`px-2.5 py-0.5 rounded text-[10px] font-medium transition cursor-pointer ${
-                              selectedSkill === skill 
-                                ? 'bg-indigo-100 text-indigo-700' 
-                                : 'bg-slate-50 hover:bg-slate-100 text-slate-500 border border-slate-100'
-                            }`}
-                          >
-                            {skill}
+                      <div className="space-y-1.5 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2.5">
+                          <span className="text-xs font-semibold text-slate-400 truncate">{job.companyName}</span>
+                          <span className="w-1 h-1 rounded-full bg-slate-300" />
+                          <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-sans weight-medium">
+                            {job.category}
                           </span>
-                        ))}
+                        </div>
+                        
+                        <h3 className="font-bold text-slate-800 group-hover:text-indigo-600 transition text-lg leading-snug truncate font-sans">
+                          {job.title}
+                        </h3>
+
+                        <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-slate-500 pt-0.5 font-sans">
+                          <span className="flex items-center gap-1">
+                            <MapPin className="w-3.5 h-3.5 text-slate-400" /> {job.location}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <IndianRupee className="w-3.5 h-3.5 text-slate-400" /> {job.salary}
+                          </span>
+                          <span className="flex items-center gap-1 text-slate-400 font-medium">
+                            📅 {job.postedDate}
+                          </span>
+                        </div>
+
+                        {/* Job skills tags list */}
+                        <div className="flex flex-wrap gap-1.5 pt-2">
+                          {job.skills.map((skill, sIdx) => (
+                            <span 
+                              key={sIdx} 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedSkill(skill);
+                              }}
+                              className={`px-2.5 py-0.5 rounded text-[10px] font-medium transition cursor-pointer ${
+                                selectedSkill === skill 
+                                  ? 'bg-indigo-100 text-indigo-700' 
+                                  : 'bg-slate-50 hover:bg-slate-100 text-slate-500 border border-slate-100'
+                              }`}
+                            >
+                                {skill}
+                            </span>
+                          ))}
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Actions Right Container */}
-                  <div className="flex sm:flex-col gap-2.5 w-full sm:w-auto shrink-0 border-t sm:border-t-0 pt-4 sm:pt-0 border-slate-100/80 justify-end">
-                    <button 
-                      onClick={() => onSelectJob(job.id)}
-                      className="flex-1 sm:flex-initial text-center bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 px-6 rounded-xl text-xs transition shadow-sm cursor-pointer"
-                    >
-                      View Details
-                    </button>
-                    <button 
-                      onClick={() => onToggleSaveJob(job.id)}
-                      className={`py-2 px-3 rounded-xl border transition flex items-center justify-center gap-1.5 text-xs cursor-pointer ${
-                        savedJobIds.includes(job.id)
-                          ? 'bg-rose-50 border-rose-100 text-rose-600 hover:bg-rose-100/50' 
-                          : 'bg-slate-50 hover:bg-slate-100 text-slate-500 border-slate-200'
+                    {/* Actions Right Container */}
+                    <div className="flex sm:flex-col gap-2.5 w-full sm:w-auto shrink-0 border-t sm:border-t-0 pt-4 sm:pt-0 border-slate-100/80 justify-end">
+                      <button 
+                        onClick={() => onSelectJob(job.id)}
+                        className="flex-1 sm:flex-initial text-center bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 px-6 rounded-xl text-xs transition shadow-sm cursor-pointer"
+                      >
+                        View Details
+                      </button>
+                      <button 
+                        onClick={() => onToggleSaveJob(job.id)}
+                        className={`py-2 px-3 rounded-xl border transition flex items-center justify-center gap-1.5 text-xs cursor-pointer ${
+                          savedJobIds.includes(job.id)
+                            ? 'bg-rose-50 border-rose-100 text-rose-600 hover:bg-rose-100/50' 
+                            : 'bg-slate-50 hover:bg-slate-100 text-slate-500 border-slate-200'
+                        }`}
+                      >
+                        <Heart className={`w-3.5 h-3.5 ${savedJobIds.includes(job.id) ? 'fill-current text-rose-500' : ''}`} />
+                        <span>{savedJobIds.includes(job.id) ? 'Saved' : 'Save'}</span>
+                      </button>
+                    </div>
+
+                  </div>
+                ))}
+              </div>
+
+              {/* Dynamic Jobs Pagination Footer */}
+              {totalPages > 1 && (
+                <div id="jobs-pagination-deck" className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-50 border border-slate-200/60 rounded-2xl p-4 mt-6">
+                  <div className="text-xs text-slate-500 font-semibold font-sans">
+                    Page <strong className="text-slate-800">{safeCurrentPage}</strong> of <strong className="text-slate-800">{totalPages}</strong>
+                    <span className="hidden sm:inline"> • Showing vacancies {((safeCurrentPage - 1) * JOBS_PER_PAGE) + 1} - {Math.min(safeCurrentPage * JOBS_PER_PAGE, filteredJobs.length)}</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      disabled={safeCurrentPage === 1}
+                      className={`p-2 rounded-xl border flex items-center justify-center transition-all cursor-pointer ${
+                        safeCurrentPage === 1 
+                          ? 'text-slate-300 border-slate-100 bg-slate-50 cursor-not-allowed' 
+                          : 'text-slate-600 border-slate-200 bg-white hover:bg-slate-50'
                       }`}
                     >
-                      <Heart className={`w-3.5 h-3.5 ${savedJobIds.includes(job.id) ? 'fill-current text-rose-500' : ''}`} />
-                      <span>{savedJobIds.includes(job.id) ? 'Saved' : 'Save'}</span>
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, index) => {
+                        let targetPage = index + 1;
+                        if (safeCurrentPage > 3) {
+                          targetPage = safeCurrentPage - 3 + index;
+                        }
+                        if (targetPage + (5 - index - 1) > totalPages) {
+                          targetPage = totalPages - 5 + index + 1;
+                        }
+                        if (targetPage < 1) targetPage = index + 1;
+                        
+                        if (targetPage > totalPages) return null;
+
+                        return (
+                          <button
+                            key={targetPage}
+                            onClick={() => setCurrentPage(targetPage)}
+                            className={`w-8 h-8 rounded-xl font-bold text-xs transition-all cursor-pointer ${
+                              safeCurrentPage === targetPage
+                                ? 'bg-indigo-600 text-white shadow-sm'
+                                : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200'
+                            }`}
+                          >
+                            {targetPage}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                      disabled={safeCurrentPage === totalPages}
+                      className={`p-2 rounded-xl border flex items-center justify-center transition-all cursor-pointer ${
+                        safeCurrentPage === totalPages 
+                          ? 'text-slate-300 border-slate-100 bg-slate-50 cursor-not-allowed' 
+                          : 'text-slate-600 border-slate-200 bg-white hover:bg-slate-50'
+                      }`}
+                    >
+                      <ChevronRight className="w-4 h-4" />
                     </button>
                   </div>
-
                 </div>
-              ))}
+              )}
             </div>
           )}
 

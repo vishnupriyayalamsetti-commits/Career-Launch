@@ -44,9 +44,24 @@ export interface Application {
   companyName: string;
   appliedDate: string;
   status: 'applied' | 'under revision' | 'shortlisted' | 'interview scheduled' | 'offered' | 'not selected';
+  jobType?: 'fresher' | 'experienced';
 }
 
 export interface SavedJob {
   id: string;
   savedDate: string;
+}
+
+export interface AppNotification {
+  id: string;
+  appId: string;
+  jobId: string;
+  jobTitle: string;
+  companyName: string;
+  type: 'exam' | 'interview' | 'offer' | 'revision';
+  title: string;
+  message: string;
+  date: string;
+  read: boolean;
+  eventDate?: string; // Date/Time of the exam or interview
 }

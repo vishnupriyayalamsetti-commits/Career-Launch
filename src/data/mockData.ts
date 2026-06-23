@@ -868,16 +868,25 @@ const postedTimesForGen = [
   '5 days ago', '1 week ago', '10 days ago', '2 weeks ago'
 ];
 
-// Seed the programmatic generator of 105 extra jobs
-for (let i = 1; i <= 105; i++) {
+// Seed the programmatic generator of 1100 extra jobs
+const teamNamesForGen = [
+  'Platform Tech', 'Core Infrastructure', 'Cloud Systems Solutions', 
+  'Product Dev Labs', 'Sustaining Engineering', 'Next-Gen Core', 
+  'Strategic Integrations', 'Global Services', 'Interface Dynamics', 
+  'Advanced Data Ops', 'SRE Systems Group', 'Security Controls Team'
+];
+
+for (let i = 1; i <= 1100; i++) {
   const cat = categoriesForExpansion[i % categoriesForExpansion.length];
   const type = i % 2 === 0 ? 'fresher' : 'experienced';
   const cmp = companiesForExpansion[i % companiesForExpansion.length];
   const loc = locationsForGen[i % locationsForGen.length];
   const post = postedTimesForGen[i % postedTimesForGen.length];
+  const team = teamNamesForGen[i % teamNamesForGen.length];
   
   const titleList = jobTitlesByCat[cat]?.[type] || ['Software Engineer'];
-  const title = titleList[i % titleList.length] + ` (Sector ${String.fromCharCode(65 + (i % 6))})`;
+  const baseTitle = titleList[i % titleList.length];
+  const title = `${baseTitle} - ${team} (${String.fromCharCode(65 + (i % 6))}-${100 + i})`;
   
   const skillsList = skillsByCat[cat] || [['Git']];
   const skills = skillsList[i % skillsList.length];
@@ -901,7 +910,7 @@ for (let i = 1; i <= 105; i++) {
     salary: salaryRange,
     type,
     skills,
-    description: `Join ${cmp.name} as a dynamic ${title}. Work in our modern ${loc} offices to build high-performance pipelines. This role is crucial to our active global platforms serving millions of digital clients. You will learn, grow, and set advanced benchmarks within a collaborative framework.`,
+    description: `Join the ${team} at ${cmp.name} as a dynamic ${title}. Work in our modern ${loc} office to build high-performance pipelines. This role is crucial to our active global platforms serving millions of digital clients. You will learn, grow, and set advanced benchmarks within a collaborative framework.`,
     requirements: [
       `Bachelor's / Master's degree in Computer Science, IT, or equivalent professional specialization`,
       `Demonstrated proficiency in ${skills[0]} and associated system-level paradigms`,
