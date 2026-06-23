@@ -1,4 +1,4 @@
-export type TabType = 'home' | 'jobs' | 'job-details' | 'register' | 'dashboard' | 'contact';
+export type TabType = 'home' | 'jobs' | 'job-details' | 'register' | 'dashboard' | 'contact' | 'auth';
 
 export interface Company {
   id: string;

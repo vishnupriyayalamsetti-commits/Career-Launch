@@ -12,7 +12,9 @@ import {
   Sparkles,
   Heart,
   ChevronRight,
-  BellRing
+  BellRing,
+  LogIn,
+  LogOut
 } from 'lucide-react';
 import { TabType, StudentProfile, Application } from './types';
 import HomeTab from './components/HomeTab';
@@ -22,11 +24,14 @@ import RegisterTab from './components/RegisterTab';
 import DashboardTab from './components/DashboardTab';
 import ContactTab from './components/ContactTab';
 import { mockJobs } from './data/mockData';
+import AuthModal from './components/AuthModal';
+import AuthPage from './components/AuthPage';
 
 export default function App() {
   // Tab State
   const [activeTab, setActiveTab] = useState<TabType>('home');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
 
   // Shared application states initialized from localStorage
   const [profile, setProfile] = useState<StudentProfile | null>(() => {
@@ -54,6 +59,33 @@ export default function App() {
       resumeDataUrl: 'mock-url-placeholder'
     };
   });
+
+  const handleAuthSuccess = (name: string, email: string) => {
+    setProfile(prev => {
+      if (prev && prev.email === email) {
+        return {
+          ...prev,
+          name,
+          email
+        };
+      }
+      return {
+        name,
+        email,
+        collegeName: 'National Institute of Technology (NIT), Bangalore',
+        skills: ['React', 'TypeScript', 'JavaScript', 'SQL', 'Git', 'Node.js'],
+        resumeName: `${name.toLowerCase().replace(/\s+/g, '_')}_resume.pdf`,
+        resumeDataUrl: 'mock-url-placeholder'
+      };
+    });
+    setAuthModalOpen(false);
+  };
+
+  const handleSignOut = () => {
+    setProfile(null);
+    localStorage.removeItem('career_launch_profile');
+    setActiveTab('home');
+  };
 
   const [savedJobIds, setSavedJobIds] = useState<string[]>(() => {
     const saved = localStorage.getItem('career_launch_saved_jobs');
@@ -183,6 +215,7 @@ export default function App() {
     { id: 'register', label: 'User Registration', icon: UserPlus },
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, badge: applications.length > 0 ? applications.length : undefined },
     { id: 'contact', label: 'Contact', icon: PhoneCall },
+    { id: 'auth', label: 'Login & Sign Out', icon: LogIn },
   ];
 
   return (
@@ -237,28 +270,40 @@ export default function App() {
         </div>
 
         {/* Sidebar Footer Candidate Profile Info card */}
-        <div className="shrink-0 p-4 border-t border-slate-850/80 bg-slate-900">
+        <div className="shrink-0 p-4 border-t border-slate-800 bg-slate-950/40">
           {profile ? (
-            <div 
-              onClick={() => setActiveTab('dashboard')}
-              className="p-3 bg-slate-800/30 hover:bg-slate-800/60 border border-slate-800 rounded-xl transition cursor-pointer flex items-center gap-2.5"
-            >
-              <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white font-bold flex items-center justify-center text-xs shadow-sm">
-                {profile.name.charAt(0).toUpperCase()}
+            <div className="space-y-3">
+              <div 
+                onClick={() => setActiveTab('dashboard')}
+                className="p-2.5 bg-slate-800/30 hover:bg-slate-800/60 border border-slate-800 rounded-xl transition cursor-pointer flex items-center gap-2.5"
+              >
+                <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white font-bold flex items-center justify-center text-xs shadow-sm shrink-0">
+                  {profile.name.charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-extrabold text-white truncate leading-none mb-1">{profile.name}</p>
+                  <p className="text-[9px] text-slate-400 truncate leading-none">{profile.email}</p>
+                </div>
               </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-extrabold text-white truncate leading-none mb-1">{profile.name}</p>
-                <p className="text-[10px] text-slate-400 truncate leading-none">Candidate Account</p>
-              </div>
+              <button
+                id="sidebar-signout-btn"
+                onClick={handleSignOut}
+                className="w-full flex items-center justify-center gap-2 bg-slate-800/60 hover:bg-rose-950/20 hover:text-rose-400 text-slate-300 border border-slate-800 py-2 px-3 rounded-xl text-xs font-extrabold transition cursor-pointer"
+              >
+                <LogOut className="w-3.5 h-3.5 text-slate-400 hover:text-rose-400" />
+                <span>Sign Out</span>
+              </button>
             </div>
           ) : (
-            <div className="p-1 flex flex-col gap-2">
-              <span className="text-[10px] text-slate-400 font-medium block leading-snug">Open recruitment streams:</span>
+            <div className="space-y-2">
+              <p className="text-[10px] text-slate-400 font-medium block leading-snug">Connect corporate pipeline:</p>
               <button
-                onClick={() => setActiveTab('register')}
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-3 rounded-xl text-xs transition duration-150 cursor-pointer text-center block shadow-md"
+                id="sidebar-login-btn"
+                onClick={() => setActiveTab('auth')}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-3 rounded-xl text-xs transition duration-150 cursor-pointer text-center flex items-center justify-center gap-2 shadow-md hover:scale-[1.01] active:scale-[0.99]"
               >
-                Register Profile
+                <LogIn className="w-3.5 h-3.5" />
+                <span>Log In / Sign Up</span>
               </button>
             </div>
           )}
@@ -298,17 +343,25 @@ export default function App() {
 
               {/* Mobile Actions Hamburger */}
               <div className="flex items-center gap-2">
-                {profile && (
+                {profile ? (
                   <div 
                     onClick={() => { setActiveTab('dashboard'); setMobileMenuOpen(false); }}
-                    className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center font-bold text-sm cursor-pointer"
+                    className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center font-bold text-sm cursor-pointer shrink-0"
                   >
                     {profile.name.charAt(0).toUpperCase()}
                   </div>
+                ) : (
+                  <button
+                    onClick={() => setActiveTab('auth')}
+                    className="flex items-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-100/50 py-1.5 px-3 rounded-xl text-xs font-bold leading-none cursor-pointer shrink-0"
+                  >
+                    <LogIn className="w-3.5 h-3.5" />
+                    <span>Log In</span>
+                  </button>
                 )}
                 <button 
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                  className="p-2 rounded-xl border border-slate-200 text-slate-600 hover:text-slate-905 transition bg-slate-50 cursor-pointer"
+                  className="p-2 rounded-xl border border-slate-200 text-slate-600 hover:text-slate-905 transition bg-slate-50 cursor-pointer shrink-0"
                 >
                   {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
                 </button>
@@ -347,15 +400,52 @@ export default function App() {
                 );
               })}
               <hr className="border-slate-100 my-4" />
-              <button 
-                onClick={() => {
-                  setActiveTab('register');
-                  setMobileMenuOpen(false);
-                }}
-                className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 px-4 rounded-xl text-sm transition-all shadow-md text-center block cursor-pointer"
-              >
-                {profile ? 'Edit Full Profile' : 'User Registration'}
-              </button>
+              
+              {profile ? (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                    <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white font-extrabold flex items-center justify-center text-sm shadow-xs shrink-0">
+                      {profile.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-extrabold text-slate-900 truncate leading-none mb-1">{profile.name}</p>
+                      <p className="text-[10px] text-slate-400 truncate leading-none">{profile.email}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button 
+                      onClick={() => {
+                        setActiveTab('register');
+                        setMobileMenuOpen(false);
+                      }}
+                      className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 px-3 rounded-xl text-xs transition duration-150 cursor-pointer text-center block shadow-xs"
+                    >
+                      Update Profile
+                    </button>
+                    <button 
+                      onClick={() => {
+                        handleSignOut();
+                        setMobileMenuOpen(false);
+                      }}
+                      className="bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-100 font-bold py-3 px-3 rounded-xl text-xs transition duration-150 cursor-pointer text-center flex items-center justify-center gap-1.5"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button 
+                  onClick={() => {
+                    setActiveTab('auth');
+                    setMobileMenuOpen(false);
+                  }}
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 px-4 rounded-xl text-sm transition-all shadow-md text-center flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <LogIn className="w-4 h-4" />
+                  <span>Log In / Sign Up</span>
+                </button>
+              )}
             </div>
           )}
         </header>
@@ -430,6 +520,15 @@ export default function App() {
         {activeTab === 'contact' && (
           <ContactTab />
         )}
+
+        {activeTab === 'auth' && (
+          <AuthPage 
+            profile={profile}
+            onAuthSuccess={handleAuthSuccess}
+            onSignOut={handleSignOut}
+            onNavigate={setActiveTab}
+          />
+        )}
       </main>
 
       {/* Footer Branding section */}
@@ -492,6 +591,13 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      {/* Login / Auth Overlay Panel */}
+      <AuthModal 
+        isOpen={authModalOpen} 
+        onClose={() => setAuthModalOpen(false)} 
+        onAuthSuccess={handleAuthSuccess} 
+      />
     </div>
   </div>
   );
